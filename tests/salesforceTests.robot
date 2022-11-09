@@ -26,15 +26,7 @@ Entering A Lead
     TypeText                  Email                       tina.smith@gmail.com        Rating
     TypeText                  Website                     https://www.growmore.com/
     Picklist                  Lead Source                 Partner
-
-    # Check if Similar Record already exist. If exist, click Cancel instead of Save
-    ${similarRecordsExist}=   isText                      Similar Records Exist
-    IF                        ${similarRecordsExist}
-        ClickText             Cancel
-    ELSE
-        ClickText             Save                        partial_match=false
-    END
-    
+    Cancel If Similar Record Exists
     Sleep                     1
     ClickText                 Leads
     ClickText                 Recently Viewed
