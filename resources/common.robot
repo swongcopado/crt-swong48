@@ -1,70 +1,87 @@
 *** Settings ***
+Library                   QForce
+Library                   String
 
-Library    QWeb
-Library    QVision
-Resource                        ../resources/common.robot
-Suite Setup                     Setup Browser
-Suite Teardown                  End suite
 
 *** Variables ***
-${firstNameField}               db9255ac-ef5b-4447-8304-7d7a5af4bc95.first_name
-${lastNameField}                db9255ac-ef5b-4447-8304-7d7a5af4bc95.last_name
-
-*** Test Cases ***
-
-Test Job Vacancies on GoodmanFielder
-
-    Set Library Search Order        QWeb
-    GoTo                        https://goodmanfielder.com/
-    ClickText                   Careers
-    ClickText                   View all job vacancies
-    SwitchWindow                2
-    ClickText                   Job Title:
-    TypeText                    Job Title:                  Sales Engineer
-    DropDown                    Position Type:              Full Time
-    DropDown                    Category:                   Administration
-    ClickText                   Search
-    VerifyText                  There are opportunities matching your search criteria
+${BROWSER}               chrome
+${username}              ${sfuser}
+${password}              ${sfpassword}
+${login_url}             https://${sfdomain}.my.salesforce.com/            # Salesforce instance. NOTE: Should be overwritten in CRT variables
+${home_url}              ${login_url}/lightning/page/home
 
 
+*** Keywords ***
+Setup Browser
+    Set Library Search Order                          QWeb
+    Open Browser          about:blank                 ${BROWSER}
+    SetConfig             LineBreak                   ${EMPTY}               #\ue000
+    SetConfig             DefaultTimeout              20s                    #sometimes salesforce is slow
 
-Test Make a Will on Service Portal
-    [Documentation]             Simulates a user clicking through the Service Victoria portal.
-    
-    Set Library Search Order        QWeb
 
-    GoTo                        https://www.service.vic.gov.au/business/permits-and-licences
-    Verify Font Size of Text    Find Business               40px
-    ClickText                   FAQs
-    ClickText                   What kind of support is available for small businesses?
-    ClickText                   Find services
-    ClickText                   Personal
-    ClickText                   Make a Will
-    Verify Font Size of Text    A legal Will lets your      24px
-    ClickText                   Get Started
-    SwitchWindow                2
-    ClickText                   Book appointment
-    #                           ClickText                   For myself
-    ScrollTo                    Let's Talk
-    VerifyText                  We're here to help you
-    Verify Font Size of Text    We're here to help you      35.2px
-    TypeText                    First Name*                 Test
-    TypeText                    Last Name*                  User
-    TypeText                    Phone*                      032233444
-    TypeText                    Email*                      testuser@demo.com
-    #                           ScrollText                  Select a Date & Time
-    #                           Find Available Timeslots
-    CloseWindow
+End suite
+    Close All Browsers
 
-Upload File to Account
-    Appstate    Home
-    Set Library Search Order        QWeb
-    ClickText    Accounts
-    ClickText    Recently Viewed    anchor=Accounts
-    ClickText                       All Accounts
-    ClickText                       Growmore
-    ClickText                       Upload Files 
-    QVision.ClickText               tests     
-    QVision.ClickText               suite        
-    QVision.DoubleClick             README.txt  
-    ClickText                       Done
+
+Login
+    [Documentation]      Login to Salesforce instance
+    GoTo                 ${login_url}
+    TypeText             Username                    ${username}
+    TypeText             Password                    ${password}
+    ClickText            Log In
+    ${isMFA}=  IsText     Verify Your Identity                                    #Determines MFA is prompted
+    Log To Console                       ${isMFA}
+    IF   ${isMFA}                                                        #Conditional Statement for if MFA verification is required to proceed
+          ${mfa_code}=    GetOTP    ${username}    ${sfuser_mfakey}    ${password}
+          TypeSecret      Code      ${mfa_code}
+          ClickText       Verify
+    END
+
+Home
+    [Documentation]      Navigate to homepage, login if needed
+    GoTo                 ${home_url}
+    ${login_status} =    IsText                      To access this page, you have to log in to Salesforce.    2
+    Run Keyword If       ${login_status}             Login
+    GoTo                 ${home_url}
+    VerifyText           Home
+
+
+# Example of custom keyword with robot fw syntax
+VerifyStage
+    [Documentation]      Verifies that stage given in ${text} is at ${selected} state; either selected (true) or not selected (false)
+    [Arguments]          ${text}                     ${selected}=true
+    VerifyElement        //a[@title\="${text}" and @aria-checked\="${selected}"]
+
+
+NoData
+    VerifyNoText          ${data}                     timeout=3
+
+
+DeleteData
+    [Documentation]       RunBlock to remove all data until it doesn't exist anymore
+    ClickText             ${data}
+    ClickText             Delete
+    VerifyText            Are you sure you want to delete this account?
+    ClickText             Delete                      2
+    VerifyText            Undo
+    VerifyNoText          Undo
+    ClickText             Accounts                    partial_match=False
+
+Verify Font Size of Text
+    [Documentation]    Verifies the px font size of a given text is as expected.
+    [Arguments]        ${text-to-find}    ${font-size-in-px}
+
+    ${element} =         GetWebelement               ${text-to-find}        element_type=text
+    ${elemFontSize} =    Call Method                 ${element}             value_of_css_property    font-size
+    Log To Console       message=Expected: ${font-size-in-px}, Actual: ${elemFontSize}
+    Should Be True       "${elemFontSize}" == "${font-size-in-px}"
+
+Find Available Timeslots
+    [Documentation]    Loop until there is avalable time to make booking
+    FOR                        ${i}                        IN RANGE    10
+        Sleep                  1s
+        ${timeFound} =            IsNoText                      No times
+        Exit For Loop If          ${timeFound}
+        ClickText                     No times
+    END
+
