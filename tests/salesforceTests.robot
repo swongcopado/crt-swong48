@@ -195,4 +195,5 @@ Delete A Lead
         UseModal                    On
         ClickText                   Delete
         UseModal                    Off 
+        VerifyNoText                Tina Smith
     END 
