@@ -35,6 +35,29 @@ Entering A Lead
     VerifyText                  Tina Smith
     VerifyText                  Growmore
 
+Delete A Lead
+    [Documentation]             Deletes a Lead record
+    [tags]                      Lead
+    Appstate                    Home
+    VerifyText                  Home
+
+    LaunchApp                   Sales
+
+    ClickUntil                  Recently Viewed             Leads
+    ClickText                   Select a List View
+    ClickText                   All Open Leads
+    ${leadExists}=              IsText                      Tina Smith
+    IF                        ${leadExists}
+        ClickText                   Tina Smith
+        Sleep                       1s
+        ClickText                   Show more actions
+        ClickText                   Delete
+        UseModal                    On
+        ClickText                   Delete
+        UseModal                    Off 
+        VerifyNoText                Tina Smith
+    END 
+
 Converting A Lead To Opportunity-Account-Contact
     [tags]                      Lead
     Appstate                    Home
@@ -176,24 +199,4 @@ Delete Test Data
     VerifyNoText                Richard Brown
     VerifyNoText                Tina Smith
 
-Delete A Lead
-    [Documentation]             Deletes a Lead record
-    [tags]                      Lead
-    Appstate                    Home
-    VerifyText                  Home
 
-    LaunchApp                   Sales
-
-    ClickUntil                  Recently Viewed             Leads
-    ClickText                   Select a List View
-    ClickText                   All Open Leads
-    ${leadExists}=              IsText                      Tina Smith
-    IF                        ${leadExists}
-        ClickText                   Tina Smith
-        ClickText                   Show more actions
-        ClickText                   Delete
-        UseModal                    On
-        ClickText                   Delete
-        UseModal                    Off 
-        VerifyNoText                Tina Smith
-    END 
