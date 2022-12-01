@@ -28,7 +28,7 @@ Entering A Lead
     Picklist                    Lead Source                 Partner
     Cancel If Similar Record Exists
     Sleep                       1
-    ClickText                   Leads
+    ClickText                   Leads                       anchor=Opportunities
     ClickText                   Recently Viewed
     VerifyText                  List Views
     ClickText                   All Open Leads
